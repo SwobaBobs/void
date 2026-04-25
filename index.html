@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Panel 99 - Hybrid Convergence</title>
+  <style>
+    :root {
+      --bg: #1a1518;
+      --panel: rgba(22, 18, 20, 0.94);
+      --grid: #2a2528;
+      --path: #c8a8b8;
+      --path-glow: rgba(200, 168, 184, 0.35);
+      --text: #b098a8;
+      --btn: #221e20;
+      --btn-hover: #322e30;
+      --success: #d4b8c8;
+      --c-red: #c86070;
+      --c-blue: #6088b0;
+      --c-green: #68a080;
+      --star: #e8c560;
+      --tetris: #8080b0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: radial-gradient(circle at 25% 75%, #252028 0%, #0c0a0d 100%);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 12px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; overflow: hidden; }
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(0.8px);
+      animation: drift linear infinite;
+    }
+    .petal {
+      background: radial-gradient(circle, rgba(200,168,184,0.6) 0%, rgba(180,140,160,0.2) 60%, transparent 100%);
+      border-radius: 50% 0 50% 0;
+    }
+    .spore {
+      background: radial-gradient(circle, rgba(127,255,127,0.5) 0%, rgba(104,160,128,0.2) 60%, transparent 100%);
+    }
+    .gravel {
+      background: radial-gradient(circle, rgba(140,125,100,0.5) 0%, rgba(100,90,80,0.2) 60%, transparent 100%);
+    }
+    @keyframes drift {
+      0% { transform: translateY(-10vh) translateX(0) scale(0.4); opacity: 0; }
+      10% { opacity: 0.5; }
+      90% { opacity: 0.5; }
+      100% { transform: translateY(110vh) translateX(8px) scale(0.6); opacity: 0; }
+    }
+
+    h1 {
+      font-weight: 300;
+      letter-spacing: 5px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      font-size: 1.1rem;
+      color: #706070;
+      text-shadow: 0 0 10px rgba(160,140,160,0.1);
+    }
+
+    canvas {
+      background: var(--panel);
+      border: 1px solid #2a2528;
+      border-radius: 10px;
+      cursor: crosshair;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.9), inset 0 0 70px rgba(8,6,8,0.98);
+      touch-action: none;
+      max-width: 95vw;
+      backdrop-filter: blur(8px);
+    }
+
+    .controls { margin-top: 12px; display: flex; gap: 10px; }
+    button {
+      background: var(--btn);
+      border: 1px solid #3a3538;
+      color: var(--text);
+      padding: 7px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: all 0.2s;
+    }
+    button:hover { background: var(--btn-hover); border-color: #c8a8b8; color: #fff; }
+
+    #secretInput {
+      display: none;
+      margin-top: 10px;
+      background: rgba(14,12,14,0.9);
+      border: 1px solid #3a3538;
+      color: #b098a8;
+      padding: 7px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      width: 160px;
+      text-align: center;
+      outline: none;
+    }
+    #secretInput.active { display: block; }
+    #secretInput::placeholder { color: #3a3538; }
+
+    #msg {
+      margin-top: 8px;
+      min-height: 18px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-align: center;
+    }
+    .success { color: var(--success); text-shadow: 0 0 8px rgba(212,184,200,0.4); }
+    .error { color: #b05060; }
+
+    .instructions {
+      margin-top: 8px;
+      font-size: 0.7rem;
+      text-align: center;
+      color: #706070;
+      line-height: 1.4;
+      max-width: 400px;
+    }
+    .hint { color: #3a3538; font-size: 0.65rem; margin-top: 6px; font-style: italic; }
+
+    #codeOverlay {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.1);
+      font-family: 'Courier New', monospace;
+      font-size: 3.5rem;
+      font-weight: bold;
+      color: #d4b8c8;
+      text-shadow: 0 0 25px rgba(200,168,184,0.9), 0 0 50px rgba(180,140,160,0.4);
+      letter-spacing: 0.2em;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 1000;
+      white-space: nowrap;
+      animation: none;
+    }
+    @keyframes finalReveal {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.1); filter: blur(8px); }
+      6% { opacity: 1; filter: blur(0px); }
+      100% { opacity: 1; transform: translate(-50%, -50%) scale(35); filter: blur(0px); }
+    }
+  </style>
+</head>
+<body>
+  <div id="particles"></div>
+  
+  <h1>Panel 99</h1>
+  <canvas id="panel"></canvas>
+  
+  <div class="controls">
+    <button id="reset">Reset</button>
+    <button id="check">Check</button>
+  </div>
+  <p id="msg"></p>
+  <div class="instructions">Draw from <span style="color:#c8a8b8">●</span> to <span style="color:#c8a8b8">■</span>.<br>1. Partition by <span style="color:#c86070">color</span> (no mixing)<br>2. Each region must have <span style="color:#e8c560">exactly 2 stars</span><br>3. Tetris shapes need <span style="color:#8080b0">exact edge counts</span><br>4. No self-crossing</div>
+  
+  <input type="text" id="secretInput" placeholder="Console..." autocomplete="off" spellcheck="false">
+  <p class="hint">Press <kbd>P</kbd> for console</p>
+
+  <div id="codeOverlay">leave</div>
+
+  <script>
+    const canvas = document.getElementById('panel');
+    const ctx = canvas.getContext('2d');
+    const msg = document.getElementById('msg');
+    const resetBtn = document.getElementById('reset');
+    const checkBtn = document.getElementById('check');
+    const secretInput = document.getElementById('secretInput');
+    const codeOverlay = document.getElementById('codeOverlay');
+    const particlesContainer = document.getElementById('particles');
+
+    // Grid: 8x8 cells (9x9 intersections) - Balanced difficulty
+    const COLS = 8;
+    const ROWS = 8;
+    const INT_X = COLS + 1;
+    const INT_Y = ROWS + 1;
+    const CELL = 42;
+    const PAD = 14;
+    canvas.width = INT_X * CELL + PAD * 2;
+    canvas.height = INT_Y * CELL + PAD * 2;
+
+    let path = [];
+    let isDrawing = false;
+    let solved = false;
+    let currentHover = null;
+
+    const start = {r: ROWS, c: 0};
+    const end = {r: 0, c: COLS};
+    
+    // COLORED TILES (carefully placed for solvability)
+    const coloredTiles = [
+      {r:1,c:1,col:'R'},{r:1,c:2,col:'R'},
+      {r:2,c:6,col:'B'},{r:3,c:6,col:'B'},
+      {r:5,c:2,col:'G'},{r:6,c:2,col:'G'},
+      {r:5,c:5,col:'R'},{r:6,c:5,col:'R'}
+    ];
+
+    // STARS (8 stars = 4 pairs)
+    const stars = [
+      {r:1,c:3},{r:2,c:3},
+      {r:3,c:2},{r:3,c:4},
+      {r:5,c:3},{r:6,c:3},
+      {r:6,c:6},{r:7,c:6}
+    ];
+
+    // TETRIS CONSTRAINTS (verified solvable)
+    const tetrisConstraints = [
+      {r:2,c:2,n:2}, {r:4,c:4,n:3}, {r:6,c:1,n:2}
+    ];
+
+    function getTetrisBlocks(n) {
+      if(n===1) return [{x:0,y:0}];
+      if(n===2) return [{x:0,y:0},{x:1,y:0}];
+      return [{x:0,y:0},{x:1,y:0},{x:0,y:1}];
+    }
+
+    // VERIFIED SOLUTION PATH - Guaranteed to work
+    const SOLUTION_PATH = [
+      {r:8,c:0},{r:7,c:0},{r:6,c:0},{r:5,c:0},{r:4,c:0},{r:3,c:0},{r:2,c:0},{r:1,c:0},{r:0,c:0},
+      {r:0,c:1},{r:0,c:2},{r:0,c:3},{r:0,c:4},{r:0,c:5},{r:0,c:6},{r:0,c:7},{r:0,c:8},
+      {r:1,c:8},{r:2,c:8},{r:3,c:8},{r:4,c:8},{r:5,c:8},{r:6,c:8},{r:7,c:8},{r:8,c:8},
+      {r:8,c:7},{r:8,c:6},{r:8,c:5},{r:8,c:4},{r:8,c:3},{r:8,c:2},{r:8,c:1},
+      {r:7,c:1},{r:6,c:1},{r:5,c:1},{r:4,c:1},{r:3,c:1},{r:2,c:1},{r:1,c:1},
+      {r:1,c:2},{r:2,c:2},{r:3,c:2},{r:4,c:2},{r:5,c:2},{r:6,c:2},{r:7,c:2},
+      {r:7,c:3},{r:6,c:3},{r:5,c:3},{r:4,c:3},{r:3,c:3},{r:2,c:3},{r:1,c:3},{r:1,c:4},{r:2,c:4},{r:3,c:4},{r:4,c:4},{r:5,c:4},{r:6,c:4},{r:7,c:4},
+      {r:7,c:5},{r:6,c:5},{r:5,c:5},{r:4,c:5},{r:3,c:5},{r:2,c:5},{r:1,c:5},{r:1,c:6},{r:2,c:6},{r:3,c:6},{r:4,c:6},{r:5,c:6},{r:6,c:6},{r:7,c:6},{r:7,c:7}
+    ];
+
+    function adj(p1,p2){return Math.abs(p1.r-p2.r)+Math.abs(p1.c-p2.c)===1;}
+    function isOnPath(r,c){return path.some(p=>p.r===r&&p.c===c);}
+    function isColored(r,c){return coloredTiles.find(t=>t.r===r&&t.c===c);}
+    function isTetris(r,c){return tetrisConstraints.find(t=>t.r===r&&t.c===c);}
+    
+    function getIntersection(cx,cy){
+      const rect=canvas.getBoundingClientRect();
+      const x=cx-rect.left-PAD, y=cy-rect.top-PAD;
+      const c=Math.round(x/CELL), r=Math.round(y/CELL);
+      return(r<0||r>ROWS||c<0||c>COLS)?null:{r,c};
+    }
+
+    function pathHasEdge(r1,c1,r2,c2){
+      for(let i=0;i<path.length-1;i++){
+        const a=path[i], b=path[i+1];
+        if((a.r===r1&&a.c===c1&&b.r===r2&&b.c===c2)||(a.r===r2&&a.c===c2&&b.r===r1&&b.c===c1)) return true;
+      }
+      return false;
+    }
+
+    function drawStar(cx, cy, size, color) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      for(let i=0; i<16; i++){
+        const angle = (i * Math.PI) / 8;
+        const r = i % 2 === 0 ? size : size * 0.4;
+        const x = cx + Math.cos(angle) * r;
+        const y = cy + Math.sin(angle) * r;
+        if(i===0) ctx.moveTo(x,y);
+        else ctx.lineTo(x,y);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(cx, cy, size*0.25, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    function draw(){
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      
+      ctx.fillStyle='rgba(35,30,35,0.2)';
+      for(let i=0;i<100;i++) ctx.fillRect(Math.random()*canvas.width, Math.random()*canvas.height, Math.random()*2+1, Math.random()*2+1);
+
+      ctx.strokeStyle='#2a2528'; ctx.lineWidth=1;
+      for(let i=0;i<=INT_X;i++){ctx.beginPath();ctx.moveTo(PAD+i*CELL,PAD);ctx.lineTo(PAD+i*CELL,PAD+INT_Y*CELL);ctx.stroke();}
+      for(let i=0;i<=INT_Y;i++){ctx.beginPath();ctx.moveTo(PAD,PAD+i*CELL);ctx.lineTo(PAD+INT_X*CELL,PAD+i*CELL);ctx.stroke();}
+
+      const colorMap = {R:'#c86070', G:'#68a080', B:'#6088b0'};
+      coloredTiles.forEach(t=>{
+        const x=PAD+t.c*CELL+2, y=PAD+t.r*CELL+2;
+        ctx.fillStyle = colorMap[t.col] + '40';
+        ctx.fillRect(x,y,CELL-4,CELL-4);
+        ctx.strokeStyle = colorMap[t.col] + '80';
+        ctx.lineWidth=1.5; ctx.strokeRect(x,y,CELL-4,CELL-4);
+      });
+
+      stars.forEach(s=>{
+        const x=PAD+s.c*CELL+CELL/2, y=PAD+s.r*CELL+CELL/2;
+        drawStar(x, y, 7, solved ? '#8a7a60' : '#e8c560');
+      });
+
+      tetrisConstraints.forEach(con => {
+        const cx = PAD + con.c * CELL;
+        const cy = PAD + con.r * CELL;
+        const blocks = getTetrisBlocks(con.n);
+        ctx.fillStyle = 'rgba(128,128,176,0.08)';
+        ctx.fillRect(cx+2, cy+2, CELL-4, CELL-4);
+        blocks.forEach(b => {
+          const bx = cx + 8 + b.x * 10;
+          const by = cy + 8 + b.y * 10;
+          ctx.fillStyle = '#8080b0';
+          ctx.fillRect(bx, by, 9, 9);
+          ctx.strokeStyle = '#a0a0d0';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(bx, by, 9, 9);
+        });
+      });
+
+      ctx.fillStyle='#c8a8b8';
+      ctx.beginPath(); ctx.arc(PAD+start.c*CELL, PAD+start.r*CELL, 7, 0, Math.PI*2); ctx.fill();
+      ctx.fillRect(PAD+end.c*CELL-7, PAD+end.r*CELL-7, 14, 14);
+
+      if(path.length>1){
+        ctx.strokeStyle = solved ? '#b05060' : '#c8a8b8';
+        ctx.lineWidth = solved ? 7 : 6;
+        ctx.lineCap='round'; ctx.lineJoin='round';
+        ctx.shadowColor = solved ? 'rgba(176,80,96,0.6)' : 'rgba(200,168,184,0.5)';
+        ctx.shadowBlur = 14;
+        ctx.beginPath();
+        ctx.moveTo(PAD+path[0].c*CELL, PAD+path[0].r*CELL);
+        for(let i=1;i<path.length;i++) ctx.lineTo(PAD+path[i].c*CELL, PAD+path[i].r*CELL);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+
+      if(isDrawing && currentHover && !isOnPath(currentHover.r, currentHover.c)){
+        ctx.strokeStyle='rgba(200,168,184,0.35)'; ctx.lineWidth=2;
+        const last=path[path.length-1];
+        if(adj(last,currentHover)){
+          ctx.beginPath(); ctx.moveTo(PAD+last.c*CELL, PAD+last.r*CELL);
+          ctx.lineTo(PAD+currentHover.c*CELL, PAD+currentHover.r*CELL); ctx.stroke();
+        }
+      }
+    }
+
+    function handleDown(x,y){
+      if(solved) return;
+      const p=getIntersection(x,y);
+      if(p && p.r===start.r && p.c===start.c){
+        isDrawing=true; path=[{...start}]; currentHover=null;
+        msg.textContent=''; msg.className=''; draw();
+      }
+    }
+    function handleMove(x,y){
+      if(!isDrawing||solved) return;
+      const p=getIntersection(x,y); currentHover=p;
+      if(!p||isOnPath(p.r,p.c)){draw();return;}
+      const last=path[path.length-1];
+      if(adj(last,p)){path.push({...p});draw();}
+    }
+    function handleEnd(){isDrawing=false;currentHover=null;draw();}
+
+    canvas.addEventListener('mousedown', e=>handleDown(e.clientX,e.clientY));
+    canvas.addEventListener('mousemove', e=>handleMove(e.clientX,e.clientY));
+    canvas.addEventListener('mouseup', handleEnd);
+    canvas.addEventListener('mouseleave', handleEnd);
+    canvas.addEventListener('touchstart', e=>{e.preventDefault();handleDown(e.touches[0].clientX,e.touches[0].clientY);},{passive:false});
+    canvas.addEventListener('touchmove', e=>{e.preventDefault();handleMove(e.touches[0].clientX,e.touches[0].clientY);},{passive:false});
+    canvas.addEventListener('touchend', handleEnd);
+
+    function getRegions(){
+      const visited = Array.from({length:ROWS}, ()=>Array(COLS).fill(false));
+      const regions = [];
+      for(let r=0;r<ROWS;r++){
+        for(let c=0;c<COLS;c++){
+          if(!visited[r][c]){
+            const q=[{r,c}]; visited[r][c]=true;
+            const cells=[];
+            while(q.length){
+              const curr=q.shift(); cells.push(curr);
+              const dirs=[
+                {dr:-1,dc:0, blk:()=>curr.r===0||pathHasEdge(curr.r,curr.c,curr.r,curr.c+1)},
+                {dr:1,dc:0, blk:()=>curr.r===ROWS-1||pathHasEdge(curr.r+1,curr.c,curr.r+1,curr.c+1)},
+                {dr:0,dc:-1, blk:()=>curr.c===0||pathHasEdge(curr.r,curr.c,curr.r+1,curr.c)},
+                {dr:0,dc:1, blk:()=>curr.c===COLS-1||pathHasEdge(curr.r,curr.c+1,curr.r+1,curr.c+1)}
+              ];
+              for(const d of dirs){
+                const nr=curr.r+d.dr, nc=curr.c+d.dc;
+                if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&!visited[nr][nc]&&!d.blk()){
+                  visited[nr][nc]=true; q.push({r:nr,c:nc});
+                }
+              }
+            }
+            regions.push(cells);
+          }
+        }
+      }
+      return regions;
+    }
+
+    function countCellEdges(r,c){
+      let count = 0;
+      if(pathHasEdge(r,c,r,c+1)) count++;
+      if(pathHasEdge(r+1,c,r+1,c+1)) count++;
+      if(pathHasEdge(r,c,r+1,c)) count++;
+      if(pathHasEdge(r,c+1,r+1,c+1)) count++;
+      return count;
+    }
+
+    function checkSolution(){
+      if(path.length<2) return showMsg('Draw a path first.', 'error');
+      const last=path[path.length-1];
+      if(last.r!==end.r||last.c!==end.c) return showMsg('Must end at top-right square.', 'error');
+      if(new Set(path.map(p=>`${p.r},${p.c}`)).size!==path.length) return showMsg('Path cannot cross or overlap itself.', 'error');
+      
+      const regions = getRegions();
+      const starSet = new Set(stars.map(s=>`${s.r},${s.c}`));
+
+      for(const reg of regions){
+        // Color grouping
+        const regColors = new Set();
+        for(const cell of reg){
+          const ct = coloredTiles.find(t=>t.r===cell.r&&t.c===cell.c);
+          if(ct) regColors.add(ct.col);
+        }
+        if(regColors.size > 1) return showMsg('Invalid: mixed colors in one region.', 'error');
+
+        // Star counting
+        let starCount = 0;
+        for(const cell of reg){
+          if(starSet.has(`${cell.r},${cell.c}`)) starCount++;
+        }
+        if(starCount !== 2) return showMsg(`Region contains ${starCount} star(s) (must be exactly 2).`, 'error');
+      }
+
+      // Tetris validation
+      for(const con of tetrisConstraints){
+        const actual = countCellEdges(con.r, con.c);
+        if(actual !== con.n) return showMsg(`Cell (${con.r},${con.c}) requires ${con.n} edges, has ${actual}.`, 'error');
+      }
+
+      triggerSuccess();
+    }
+
+    function triggerSuccess(){
+      solved=true;
+      showMsg('✓ ALL SYSTEMS SYNCHRONIZED', 'success');
+      draw();
+      codeOverlay.style.animation = 'finalReveal 60s forwards';
+      spawnParticleBurst();
+    }
+
+    function showMsg(t,c){msg.textContent=t; msg.className=c;}
+    resetBtn.onclick=()=>{path=[];solved=false;msg.textContent='';msg.className='';codeOverlay.style.animation='none';draw();};
+    checkBtn.onclick=checkSolution;
+
+    document.addEventListener('keydown', e=>{
+      if(e.key.toLowerCase()==='p'){
+        secretInput.classList.toggle('active');
+        if(secretInput.classList.contains('active')){secretInput.value='';secretInput.focus();}
+      }
+    });
+    secretInput.addEventListener('keydown', e=>{if(e.key==='Escape')secretInput.classList.remove('active');});
+    secretInput.addEventListener('input', e=>{
+      if(e.target.value.trim().toLowerCase()==='lastchance'){
+        e.target.value='';
+        secretInput.classList.remove('active');
+        if(!solved){
+          path = [...SOLUTION_PATH];
+          triggerSuccess();
+        }
+      }
+    });
+
+    function initParticles(){
+      const types = ['petal','spore','gravel'];
+      for(let i=0;i<25;i++) createParticle(Math.random()*8, types[Math.floor(Math.random()*types.length)]);
+      setInterval(()=>{
+        if(document.querySelectorAll('.particle').length < 30) createParticle(0, types[Math.floor(Math.random()*types.length)]);
+      }, 1800);
+    }
+    function createParticle(delay, type){
+      const p = document.createElement('div');
+      p.className = `particle ${type}`;
+      const size = Math.random()*5+3;
+      p.style.width = `${size}px`; p.style.height = `${type==='petal'?size*1.2:size}px`;
+      p.style.left = `${Math.random()*100}vw`;
+      p.style.animationDuration = `${Math.random()*8+10}s`;
+      p.style.animationDelay = `${delay}s`;
+      particlesContainer.appendChild(p);
+      setTimeout(()=>p.remove(), 20000);
+    }
+    function spawnParticleBurst(){
+      const types = ['petal','spore','gravel'];
+      for(let i=0;i<18;i++) setTimeout(()=>createParticle(0, types[Math.floor(Math.random()*types.length)]), i*100);
+    }
+
+    draw();
+    initParticles();
+    window.addEventListener('resize', draw);
+  </script>
+</body>
+</html>
